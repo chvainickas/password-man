@@ -3,12 +3,13 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.mycompany.password.man;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.security.SecureRandom;
 import java.util.Base64;
+
 /**
  *
  * @author pylyp
@@ -17,25 +18,29 @@ import java.util.Base64;
 
 public class EncryptionUtil {
 
+    private final SecretKeySpec secretKey;
     private static final String ALGORITHM = "AES";
-    private static final int KEY_SIZE = 256;
-    private final SecretKey secretKey;
 
-    // Генерация или установка ключа
     public EncryptionUtil(String masterPassword) throws Exception {
-        byte[] key = masterPassword.getBytes("UTF-8");
-        this.secretKey = new SecretKeySpec(key, 0, 32, ALGORITHM);
+        byte[] key = generateKey(masterPassword);
+        this.secretKey = new SecretKeySpec(key, ALGORITHM);
+    }
+    
+    private byte[] generateKey(String masterPassword) throws NoSuchAlgorithmException, UnsupportedEncodingException {
+        MessageDigest sha = MessageDigest.getInstance("SHA-256");
+        return sha.digest(masterPassword.getBytes("UTF-8"));
     }
 
-    // Метод шифрования текста
+    // encrypt
     public String encrypt(String plainText) throws Exception {
         Cipher cipher = Cipher.getInstance(ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
         byte[] encryptedData = cipher.doFinal(plainText.getBytes("UTF-8"));
+        System.out.println(Base64.getEncoder().encodeToString(encryptedData));
         return Base64.getEncoder().encodeToString(encryptedData);
     }
 
-    // Метод расшифрования текста
+    // decrypt
     public String decrypt(String cipherText) throws Exception {
         Cipher cipher = Cipher.getInstance(ALGORITHM);
         cipher.init(Cipher.DECRYPT_MODE, secretKey);
