@@ -1,2 +1,20 @@
+# Build directory
 /target/
+
+# Environment and secrets
 .env
+*.env
+.env.*
+
+# Security and network test files
+src/main/java/com/mycompany/password/man/SecretTest.java
+src/main/java/com/mycompany/password/man/NetworkTest.java
+src/main/java/com/mycompany/password/man/*Test.java
+src/main/java/com/mycompany/password/man/Security*.java
+src/main/java/com/mycompany/password/man/Auth*.java
+src/main/java/com/mycompany/password/man/DatabaseOperations.java
+# IDE files (optional but recommended)
+.idea/
+.vscode/
+nbproject/
+nb-configuration.xml
