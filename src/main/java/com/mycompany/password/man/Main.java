@@ -3,62 +3,75 @@
  */
 
 package com.mycompany.password.man;
-
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.Scanner;
 
 /**
  *
  * @author ed
  */
-public class Main {
 
-    public static void main(String[] args) {
-        try {
-            Scanner scanner = new Scanner(System.in);
-            
-            System.out.println("Set your master password:");
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Scanner scanner = new Scanner(System.in);
+        FileStorage storage = new FileStorage();
+
+        String masterPasswordHash = storage.getMasterPasswordHash();
+        EncryptionUtil encryptionUtil;
+
+        if (masterPasswordHash == null) {
+            System.out.print("Set your master password: ");
             String masterPassword = scanner.nextLine();
 
-            PasswordManager manager = new PasswordManager(masterPassword, "passwords.dat");
+            String hashedMasterPassword = hashPassword(masterPassword);
+            storage.saveMasterPassword(hashedMasterPassword);
 
-            while (true) {
-                System.out.println("\nPassword Manager:");
-                System.out.println("1. Add new password");
-                System.out.println("2. View password");
-                System.out.println("3. Save passwords");
-                System.out.println("4. Exit");
-                int choice = scanner.nextInt();
-                scanner.nextLine(); // Consume newline character
+            encryptionUtil = new EncryptionUtil(masterPassword);
+            System.out.println("Master password set.");
+        } else {
+            System.out.print("Enter your master password: ");
+            String masterPassword = scanner.nextLine();
 
-                switch (choice) {
-                    case 1:
-                        System.out.println("Enter service name:");
-                        String service = scanner.nextLine();
-                        System.out.println("Enter login:");
-                        String login = scanner.nextLine();
-                        System.out.println("Enter password:");
-                        String password = scanner.nextLine();
-                        manager.addPassword(service, login, password);
-                        break;
-                    case 2:
-                        System.out.println("Enter service name to view:");
-                        service = scanner.nextLine();
-                        manager.viewPassword(service);
-                        break;
-                    case 3:
-                        manager.savePasswords();
-                        break;
-                    case 4:
-                        System.out.println("Exiting...");
-                        scanner.close();
-                        return;
-                    default:
-                        System.out.println("Invalid choice. Please try again.");
-                        break;
-                }
+            String hashedInputPassword = hashPassword(masterPassword);
+            if (!hashedInputPassword.equals(masterPasswordHash)) {
+                System.out.println("Incorrect master password!");
+                return;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+
+            encryptionUtil = new EncryptionUtil(masterPassword);
+            System.out.println("Access granted.");
         }
+
+        PasswordManager passwordManager = new PasswordManager(encryptionUtil, storage);
+
+        while (true) {
+            System.out.println("1. Add account\n2. Find accounts by service\n3. Exit");
+            System.out.print("Choose an option: ");
+            int choice = scanner.nextInt();
+            scanner.nextLine();  // consume newline
+
+            if (choice == 1) {
+                System.out.print("Service: ");
+                String service = scanner.nextLine();
+                System.out.print("Login: ");
+                String login = scanner.nextLine();
+                System.out.print("Password: ");
+                String password = scanner.nextLine();
+                passwordManager.addAccount(service, login, password);
+            } else if (choice == 2) {
+                System.out.print("Service: ");
+                String service = scanner.nextLine();
+                passwordManager.findAccountsByService(service);
+            } else {
+                break;
+            }
+        }
+    }
+
+    private static String hashPassword(String password) throws Exception {
+        MessageDigest sha = MessageDigest.getInstance("SHA-256");
+        return Base64.getEncoder().encodeToString(sha.digest(password.getBytes("UTF-8")));
     }
 }

@@ -3,8 +3,10 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.mycompany.password.man;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  *
@@ -12,42 +14,36 @@ import java.util.Scanner;
  */
 
 public class PasswordManager {
-
-    private final HashMap<String, String> passwordStore;
     private final EncryptionUtil encryptionUtil;
-    private final FileStorage fileStorage;
+    private final FileStorage storage;
 
-    public PasswordManager(String masterPassword, String filename) throws Exception {
-        this.encryptionUtil = new EncryptionUtil(masterPassword);
-        this.fileStorage = new FileStorage(filename);
-        this.passwordStore = fileStorage.load();
+    public PasswordManager(EncryptionUtil encryptionUtil, FileStorage storage) {
+        this.encryptionUtil = encryptionUtil;
+        this.storage = storage;
     }
 
-    // Метод для добавления нового пароля
-    public void addPassword(String service, String login, String password) throws Exception {
-        String combined = login + ":" + password;
-        String encrypted = encryptionUtil.encrypt(combined);
-        passwordStore.put(service, encrypted);
-        System.out.println("Password for " + service + " added successfully.");
-    }
-
-    // Метод для просмотра пароля
-    public void viewPassword(String service) throws Exception {
-        String encryptedData = passwordStore.get(service);
-        if (encryptedData != null) {
-            String decryptedData = encryptionUtil.decrypt(encryptedData);
-            String[] parts = decryptedData.split(":", 2);
-            System.out.println("Service: " + service);
-            System.out.println("Login: " + parts[0]);
-            System.out.println("Password: " + parts[1]);
-        } else {
-            System.out.println("No password found for this service.");
+    public void addAccount(String service, String login, String password) throws Exception {
+        String encryptedPassword = encryptionUtil.encrypt(password);
+        try (Connection conn = storage.connect(); PreparedStatement pstmt = conn.prepareStatement(
+                "INSERT INTO accounts (service, login, encrypted_password) VALUES (?, ?, ?)")) {
+            pstmt.setString(1, service);
+            pstmt.setString(2, login);
+            pstmt.setString(3, encryptedPassword);
+            pstmt.executeUpdate();
         }
     }
 
-    // Метод для сохранения паролей в файл
-    public void savePasswords() throws Exception {
-        fileStorage.save(passwordStore);
-        System.out.println("Passwords saved successfully.");
+    public void findAccountsByService(String service) throws Exception {
+        try (Connection conn = storage.connect(); PreparedStatement pstmt = conn.prepareStatement(
+                "SELECT login, encrypted_password FROM accounts WHERE service = ?")) {
+            pstmt.setString(1, service);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String login = rs.getString("login");
+                String encryptedPassword = rs.getString("encrypted_password");
+                String password = encryptionUtil.decrypt(encryptedPassword);
+                System.out.printf("Service: %s, Login: %s, Password: %s%n", service, login, password);
+            }
+        }
     }
 }
