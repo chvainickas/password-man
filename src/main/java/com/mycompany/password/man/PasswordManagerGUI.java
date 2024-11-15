@@ -12,13 +12,10 @@ package com.mycompany.password.man;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.sql.*;
-import javax.crypto.*;
-import javax.crypto.spec.IvParameterSpec;
+
 import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.List;
-import java.util.ArrayList;
 
 public class PasswordManagerGUI extends JFrame {
     private PasswordManager passwordManager;
